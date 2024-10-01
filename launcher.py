@@ -1,34 +1,44 @@
-from steam import steamworks
 
-import os, json
-import glfw
+import os, sys, json, glfw
 from OpenGL.GL import *
+from steamworks import STEAMWORKS
 
-
-LAUNCH_ID = None
+os.add_dll_directory(os.getcwd())
 
 class SteamOverlayLauncher():
     def __init__(self):
         self.APP_NAME = 'External Steam Overlay'
         
-        self.config_data : dict = self.get_configuration_data()
+        if not os.path.exists('./Configs'):
+            os.mkdir('Configs')
 
-        #Data
-        self.appid        : str = self.config_data['appid']        #Main Game AppID
-        self.launch_id    : str = self.config_data['launch_id']    #AppID for initial launcher (if needed)
-        self.process_name : str = self.config_data['process_name'] #final executable file name (ex.: "ffxiv_dx11.exe", "Terraria.exe", "witcher3.exe")
-        self.executable   : str = self.config_data['executable']   #Full Filepath to final executable or launcher
+            with open('Configs\\new_config.json', 'w') as new_json:
+                data = {
+                    "launch_id"    : "",
+                    "appid"        : "",
+                    "process_name" : "",
+                    "executable"   : ""
+                }
+                json.dump(data, new_json)
 
-        self.window = None
+        self.config_data : dict = self.get_configuration_data(sys.argv[1])
+        if not self.config_data:
+            #Data
+            self.appid        : str = self.config_data['appid']        #Main Game AppID
+            self.launch_id    : str = self.config_data['launch_id']    #AppID for initial launcher (if needed)
+            self.process_name : str = self.config_data['process_name'] #final executable file name (ex.: "ffxiv_dx11.exe", "Terraria.exe", "witcher3.exe")
+            self.executable   : str = self.config_data['executable']   #Full Filepath to final executable or launcher
 
-        #Init SteamWorks
-        self.initialized = False
-        try:
-            self.set_appid(self.appid)
-            self.initialized = steamworks.initialize()
-        except Exception as e:
-            print(e)
-            input('\n\n press [ENTER]')
+            self.window = None
+
+            #Init SteamWorks
+            self.steamworks = STEAMWORKS()
+            self.initialized = False
+            try:
+                self.set_appid(self.appid)
+                self.initialized = self.steamworks.initialize()
+            except Exception as e:
+                pass #NEED ERROR DISPLAY
 
     ## CORE
     def run(self):
@@ -78,21 +88,24 @@ class SteamOverlayLauncher():
 
     def stop_process(self):
         self.set_appid(self.launch_id)
-        glfw.terminate()
+        try:
+            glfw.terminate()
+        except: pass
     
     ## FILES
-    def set_appid(appid:str):
+    def set_appid(self, appid:str):
         with open('steam_appid.txt', 'w') as id_file:
             id_file.write(appid)
 
-    def get_configuration_data(self) -> dict | None:
-        if os.path.exists('launcher_config.json'):
-            with open('launcher_config.json', 'r') as file:
+    def get_configuration_data(self, file) -> dict | None:
+        if file: file = os.path.basename(file)
+        if os.path.exists(f'Configs\\{file}'):
+            with open(f'Configs\\{file}', 'r') as file:
                 return json.load(file)
         else: return None
 
     
-
+## RUNNING APP
 
 if __name__ == "__main__":
     
