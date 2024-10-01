@@ -22,7 +22,7 @@ class SteamOverlayLauncher():
                 json.dump(data, new_json)
 
         self.config_data : dict = self.get_configuration_data(sys.argv[1])
-        if not self.config_data:
+        if self.config_data:
             #Data
             self.appid        : str = self.config_data['appid']        #Main Game AppID
             self.launch_id    : str = self.config_data['launch_id']    #AppID for initial launcher (if needed)
